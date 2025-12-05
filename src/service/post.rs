@@ -2,6 +2,8 @@ use sqlx::{FromRow, Pool};
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::types::Json;
 use tracing::{Level, event, instrument};
+
+/// 存储的博文结构
 #[allow(dead_code)]
 #[derive(FromRow, Debug)]
 pub struct Post{
@@ -13,12 +15,24 @@ pub struct Post{
     count: i32,
 }
 
-
 /// PostService
 /// 博文有关的数据库操作的封装
+/// EXAMPLE:
+/// ```rust,no run 
+/// use sqlx::{Pool, Postgres};
+/// # use sqlx::types::chrono::{DateTime, Utc};
+/// # use sqlx::types::Json;
+/// # use tracing::{Level, event};
+/// # use crate::service::post::Post;
+/// use crate::service::post::PostService;
+///
+/// let pool = sqlx::PgPool::connect("postgres://yixin:yixin@localhost:5432/test").await.unwrap();
+/// let service = PostService::new(pool);
+/// let post = service.get_post_by_id(1).await;
+/// assert!(post.is_ok());
+/// ```
 pub struct PostService(Pool<sqlx::Postgres>);
 impl PostService {
-
     pub fn new(pool:  Pool<sqlx::Postgres>) -> PostService {
         event!(Level::INFO, "PostService init");
         PostService(pool)
