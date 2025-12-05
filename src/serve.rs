@@ -1,15 +1,15 @@
 use sqlx::PgPool;
-use axum::{Router, extract::FromRef};
+use axum::{Router};
 use crate::router;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub db: PgPool,
+    pub pool: PgPool,
 }
 
 async fn serve() {
-    let db = PgPool::connect("").await.unwrap();
-    let state = AppState { db };
+    let pool = PgPool::connect("").await.unwrap();
+    let state = AppState { pool };
     let router = Router::new()
         .merge(router::build_router().await)
         .with_state(state);
