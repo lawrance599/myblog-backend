@@ -1,0 +1,7 @@
+database_url = "postgres://postgres:password@localhost:5432/blog"
+secret = "secret"
+port = 8080
+host = "0.0.0.0"
+log_level = "info"
+jwt_expiration_min = 86400
+run_migrations = true

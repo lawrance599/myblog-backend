@@ -7,3 +7,4 @@ CREATE TABLE post  (
     last_modify TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     count INTEGER NOT NULL DEFAULT 0
 );
+CREATE INDEX post_tags_idx ON post USING GIN (tags);

@@ -1,9 +1,11 @@
 use axum::{
-    extract::{Path, Query},
+    extract::{Multipart},
     response::{Html, IntoResponse, Redirect},
     routing::{get, post},
     Router,
 };
-async fn build_router() -> Router {
+use crate::config::AppConfig;
+async fn build_router() -> Router<AppConfig> {
     todo!()
 }
+
