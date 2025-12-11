@@ -1,7 +1,7 @@
 use sqlx::types::Json;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::{FromRow, Pool};
-use tracing::{Level, event, instrument};
+use tracing::instrument;
 
 /// 存储的博文结构
 #[allow(dead_code)]
@@ -22,7 +22,6 @@ pub struct Post {
 /// use sqlx::{Pool, Postgres};
 /// # use sqlx::types::chrono::{DateTime, Utc};
 /// # use sqlx::types::Json;
-/// # use tracing::{Level, event};
 /// # use crate::service::post::Post;
 /// use crate::service::post::PostService;
 ///
@@ -34,7 +33,7 @@ pub struct Post {
 pub struct PostReponsitory(Pool<sqlx::Postgres>);
 impl PostReponsitory {
     pub fn new(pool: Pool<sqlx::Postgres>) -> PostReponsitory {
-        event!(Level::INFO, "PostService init");
+        tracing::info!("创建PostReponsitory成功");
         PostReponsitory(pool)
     }
     #[instrument(level = "debug", skip(self))]

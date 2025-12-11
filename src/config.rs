@@ -1,5 +1,3 @@
-use std::{ops::Deref, sync::Arc};
-
 use config::Config;
 use dotenv::dotenv;
 use serde::Deserialize;

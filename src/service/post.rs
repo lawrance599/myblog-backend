@@ -28,7 +28,7 @@ impl PostService {
         if !dir.is_dir() {
             panic!(r"`{}`为无效的路径, 请输入路径", dir.to_str().unwrap_or(""))
         }
-
+        tracing::info!("创建PostServie 实例成功, 保存路径为: {}", save_dir);
         PostService {
             repository: PostReponsitory::new(pool),
             save_path: save_dir.to_string(),
@@ -61,7 +61,15 @@ impl PostService {
         }
         Ok(())
     }
-
+    #[instrument(
+        name = "添加博文",
+        level = "info",
+        skip_all,
+        fields(
+            title = %post.title,
+            id
+        )
+    )]
     pub async fn add_post(&self, post: PostCreate) -> Result<Post, String> {
         let PostCreate {
             title,
@@ -74,23 +82,36 @@ impl PostService {
             .await
             .map_err(|e| e.to_string())?;
 
+        tracing::Span::current().record("id", &new.id);
+
         self.save_post(&title, content).await?;
 
         Ok(new)
     }
-
-    pub async fn get_post(&self, id: i32) -> Result<Post, String> {
+    #[instrument(name = "读取博文元数据", level = "info", skip(self))]
+    pub async fn read_post(&self, id: i32) -> Result<Post, String> {
         Ok(self
             .repository
             .find_by_id(id)
             .await
             .map_err(|e| e.to_string())?)
     }
+    #[instrument(name = "删除博文", level = "info", skip(self))]
     pub async fn delete_post(&self, id: i32) -> Result<Post, String> {
         Ok(self
             .repository
             .delete_by_id(id)
             .await
             .map_err(|e| e.to_string())?)
+    }
+    pub async fn list_posts(&self) -> Result<Vec<Post>, String> {
+        Ok(self
+            .repository
+            .find_all(8)
+            .await
+            .map_err(|e| e.to_string())?
+            .into_iter()
+            .map(|item| item.into())
+            .collect())
     }
 }

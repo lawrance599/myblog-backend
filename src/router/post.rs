@@ -14,15 +14,26 @@ pub async fn new() -> Router<AppState> {
         .route("/upload", post(add_post))
         .route("/{id}/meta", get(read_post_meta))
         .route("/{id}", get(read_post_content))
+        .route("/list", get(list_posts))
 }
-
+pub async fn list_posts(
+    State(state): State<AppState>,
+) -> Result<SuccessResponse<Vec<PostMeta>>, ErrorResponse> {
+    let posts = state.post_service.list_posts().await;
+    return match posts {
+        Ok(posts) => Ok(SuccessResponse::new(
+            posts.into_iter().map(|i| i.into()).collect(),
+        )),
+        Err(err) => Err(ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, err)),
+    };
+}
 pub async fn read_post_content(
     State(state): State<AppState>,
     Path(id): Path<i32>,
 ) -> Result<SuccessResponse<PostFull>, ErrorResponse> {
     let post = state
         .post_service
-        .get_post(id)
+        .read_post(id)
         .await
         .map_err(|e| ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     let path = state.post_service.build_file_path(&post.title).await;
@@ -38,12 +49,12 @@ pub async fn read_post_meta(
 ) -> Result<SuccessResponse<PostMeta>, ErrorResponse> {
     let post = state
         .post_service
-        .get_post(id)
+        .read_post(id)
         .await
         .map_err(|e| ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     Ok(SuccessResponse::new(post.into()))
 }
-#[tracing::instrument(level = "info", skip_all, name = "upload post", fields(title))]
+
 pub async fn add_post(
     State(state): State<AppState>,
     multipart: Multipart,
