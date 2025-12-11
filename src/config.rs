@@ -1,18 +1,20 @@
+use std::{ops::Deref, sync::Arc};
+
 use config::Config;
 use dotenv::dotenv;
 use serde::Deserialize;
 use tracing::event;
-
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
-    database_url: String,
-    port: u16,
-    host: String,
-    secret: String,
-    jwt_expiration_min: i64,
-    run_migrations: bool,
-    rust_log: String,
-    save_dir: String,
+    pub database_url: String,
+    pub port: u16,
+    pub host: String,
+    pub secret: String,
+    pub jwt_expiration_min: i64,
+    pub run_migrations: bool,
+    pub rust_log: String,
+    pub save_dir: String,
+    pub migrate_dir: String,
 }
 impl AppConfig {
     pub fn new() -> Self {

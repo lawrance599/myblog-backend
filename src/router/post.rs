@@ -1,28 +1,64 @@
 use crate::models::post::*;
-use crate::models::{Error, Success};
-use crate::serve::AppState;
-use axum::extract::State;
-use axum::{Router, extract::Multipart, http::StatusCode, routing::post};
+use crate::models::{ErrorResponse, SuccessResponse};
+use crate::state::AppState;
+use axum::extract::{Path, State};
+use axum::{
+    Router,
+    extract::Multipart,
+    http::StatusCode,
+    routing::{get, post},
+};
 
 pub async fn new() -> Router<AppState> {
-    Router::new().route("/upload", post(add_post))
+    Router::new()
+        .route("/upload", post(add_post))
+        .route("/{id}/meta", get(read_post_meta))
+        .route("/{id}", get(read_post_content))
+}
+
+pub async fn read_post_content(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+) -> Result<SuccessResponse<PostFull>, ErrorResponse> {
+    let post = state
+        .post_service
+        .get_post(id)
+        .await
+        .map_err(|e| ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let path = state.post_service.build_file_path(&post.title).await;
+    let content = tokio::fs::read_to_string(path)
+        .await
+        .map_err(|e| ErrorResponse::new(StatusCode::NOT_FOUND, e.to_string()))?;
+    Ok(SuccessResponse::new(PostFull::with_content(post, content)))
+}
+
+pub async fn read_post_meta(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+) -> Result<SuccessResponse<PostMeta>, ErrorResponse> {
+    let post = state
+        .post_service
+        .get_post(id)
+        .await
+        .map_err(|e| ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(SuccessResponse::new(post.into()))
 }
 #[tracing::instrument(level = "info", skip_all, name = "upload post", fields(title))]
 pub async fn add_post(
     State(state): State<AppState>,
     multipart: Multipart,
-) -> Result<Success<PostId>, Error> {
+) -> Result<SuccessResponse<PostId>, ErrorResponse> {
     let new = process_multipart(multipart)
         .await
-        .map_err(|e| Error::new(StatusCode::BAD_REQUEST, e))?;
+        .map_err(|e| ErrorResponse::new(StatusCode::BAD_REQUEST, e))?;
     tracing::Span::current().record("title", &new.title);
     let post = state
         .post_service
         .add_post(new)
         .await
-        .map_err(|e| Error::new(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        .map_err(|e| ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
-    Ok(Success::new(PostId::new(post.id)))
+    Ok(SuccessResponse::new(PostId::new(post.id)))
 }
 #[inline]
 async fn process_multipart(mut multipart: Multipart) -> Result<PostCreate, String> {

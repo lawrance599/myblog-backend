@@ -5,4 +5,5 @@ host = "0.0.0.0"
 log_level = "info"
 jwt_expiration_min = 86400
 run_migrations = true
-save_dir = "files"
+save_dir = "static/posts"
+migrate_dir = "migrations"

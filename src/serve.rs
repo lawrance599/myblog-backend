@@ -1,44 +1,8 @@
-use std::ops::Deref;
-use std::sync::Arc;
-
-use crate::config::AppConfig;
-use crate::database::init_db;
 use crate::router;
-use crate::service::post::PostService;
+use crate::{config::AppConfig, state::AppState};
 use axum::Router;
 use tower_http::cors::{Any, CorsLayer};
-use tracing::info;
 use tracing_subscriber::prelude::*;
-
-pub struct Inner {
-    pub config: AppConfig,
-    pub post_service: PostService,
-}
-impl Inner {
-    pub async fn new(config: AppConfig) -> Self {
-        let url = config.get_database_url();
-        info!("使用`{}`连接数据库", url);
-        let pool = init_db(&config).await;
-        let post_service = PostService::new(pool.clone(), config.get_save_dir());
-        Inner {
-            config,
-            post_service,
-        }
-    }
-}
-#[derive(Clone)]
-pub struct AppState(Arc<Inner>);
-impl AppState {
-    pub async fn new(config: AppConfig) -> Self {
-        AppState(Arc::new(Inner::new(config).await))
-    }
-}
-impl Deref for AppState {
-    type Target = Inner;
-    fn deref(&self) -> &Self::Target {
-        &*self.0
-    }
-}
 
 pub async fn serve() {
     let config = AppConfig::new();

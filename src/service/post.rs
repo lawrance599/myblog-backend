@@ -34,6 +34,11 @@ impl PostService {
             save_path: save_dir.to_string(),
         }
     }
+
+    pub async fn build_file_path(&self, title: &str) -> PathBuf {
+        Path::new(&self.save_path).join(title)
+    }
+
     #[instrument(
         skip_all,
         level= "info"
@@ -43,8 +48,7 @@ impl PostService {
         )
     )]
     async fn save_post(&self, title: &str, content: Vec<u8>) -> Result<(), String> {
-        let mut path = PathBuf::from(&self.save_path);
-        path.push(title);
+        let path = self.build_file_path(title).await;
 
         let file = match File::create_new(path.as_path()).await {
             Ok(file) => file,

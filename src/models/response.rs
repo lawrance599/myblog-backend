@@ -6,22 +6,23 @@ use axum::{
 use serde::Serialize;
 
 #[derive(Serialize)]
-pub struct Success<T> {
+pub struct SuccessResponse<T> {
     pub data: T,
 }
 
 #[derive(Serialize)]
-pub struct Error {
+pub struct ErrorResponse {
     #[serde(skip)]
     pub code: StatusCode,
     pub message: String,
 }
-impl<T> Success<T> {
+impl<T> SuccessResponse<T> {
     pub fn new(data: T) -> Self {
         Self { data }
     }
 }
-impl<T> IntoResponse for Success<T>
+
+impl<T> IntoResponse for SuccessResponse<T>
 where
     T: Serialize,
 {
@@ -30,12 +31,12 @@ where
     }
 }
 
-impl IntoResponse for Error {
+impl IntoResponse for ErrorResponse {
     fn into_response(self) -> Response {
         (self.code.clone(), Json(self)).into_response()
     }
 }
-impl Error {
+impl ErrorResponse {
     pub fn new(code: StatusCode, message: String) -> Self {
         Self { code, message }
     }

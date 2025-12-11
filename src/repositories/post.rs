@@ -9,10 +9,10 @@ use tracing::{Level, event, instrument};
 pub struct Post {
     pub id: i32,
     pub title: String,
-    tags: Json<Vec<String>>,
+    pub tags: Json<Vec<String>>,
     first_publish: DateTime<Utc>,
     last_modify: DateTime<Utc>,
-    count: i32,
+    pub count: i32,
 }
 
 /// PostService

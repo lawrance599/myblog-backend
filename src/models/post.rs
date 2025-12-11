@@ -1,4 +1,6 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+
+use crate::repositories::post::Post;
 #[derive(Default)]
 pub struct PostCreate {
     pub title: String,
@@ -12,5 +14,56 @@ pub struct PostId {
 impl PostId {
     pub fn new(id: i32) -> Self {
         return Self { id };
+    }
+}
+#[derive(Deserialize)]
+pub struct RowTags {
+    pub tags: String,
+}
+pub struct Tags {
+    pub tags: Vec<String>,
+}
+impl TryFrom<RowTags> for Tags {
+    type Error = String;
+    fn try_from(value: RowTags) -> Result<Self, Self::Error> {
+        return Ok(Self {
+            tags: value.tags.split(',').map(|s| s.to_string()).collect(),
+        });
+    }
+}
+#[derive(Serialize)]
+pub struct PostMeta {
+    id: i32,
+    title: String,
+    tags: Vec<String>,
+    count: i32,
+}
+impl From<Post> for PostMeta {
+    fn from(value: Post) -> Self {
+        return Self {
+            id: value.id,
+            title: value.title,
+            tags: value.tags.0,
+            count: value.count,
+        };
+    }
+}
+#[derive(Serialize)]
+pub struct PostFull {
+    id: i32,
+    title: String,
+    tags: Vec<String>,
+    content: String,
+    count: i32,
+}
+impl PostFull {
+    pub fn with_content(meta: Post, content: String) -> Self {
+        return Self {
+            id: meta.id,
+            title: meta.title,
+            tags: meta.tags.0,
+            content,
+            count: meta.count,
+        };
     }
 }
