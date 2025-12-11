@@ -1,6 +1,6 @@
-use axum::{Router};
-use super::serve::AppState;
+use crate::serve::AppState;
+use axum::Router;
 mod post;
-pub async fn build_router() -> Router<AppState> {
-    todo!()
+pub async fn new() -> Router<AppState> {
+    Router::new().nest("/post", post::new().await)
 }

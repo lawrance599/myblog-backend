@@ -1,35 +1,7 @@
-use std::sync::{Arc, LazyLock};
 use config::Config;
-use tracing::event;
-use serde::Deserialize;
 use dotenv::dotenv;
-pub static CONFIG: LazyLock<Arc<AppConfig>> = LazyLock::new(|| {
-    dotenv().ok();
-    let config = Config::builder()
-        .add_source(config::File::with_name("default.toml"))
-        .add_source(
-            config::File::with_name("local.toml")
-                .required(false)
-        )
-        .add_source(
-            config::Environment::with_prefix("APP")
-        )
-        .build();
-    match config {
-        Ok(config) => {
-            let config = config.try_deserialize::<AppConfig>().unwrap();
-            event!(
-                tracing::Level::INFO,
-                "Config loaded successfully"
-            );
-            Arc::new(config)
-        }
-        Err(err) => {
-            panic!("Error loading config: {}", err);
-        }
-    }
-
-});
+use serde::Deserialize;
+use tracing::event;
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
@@ -39,37 +11,56 @@ pub struct AppConfig {
     secret: String,
     jwt_expiration_min: i64,
     run_migrations: bool,
-    log_level: String,
+    rust_log: String,
+    save_dir: String,
 }
 impl AppConfig {
-    pub fn new() -> Arc<Self> {
-        (*CONFIG).clone()
+    pub fn new() -> Self {
+        dotenv().ok();
+        let config = Config::builder()
+            .add_source(config::File::with_name("default.toml"))
+            .add_source(config::File::with_name("local.toml").required(false))
+            .add_source(config::Environment::default())
+            .build();
+        match config {
+            Ok(config) => {
+                let config = config.try_deserialize::<AppConfig>().unwrap();
+                event!(tracing::Level::INFO, "Config loaded successfully");
+                config
+            }
+            Err(err) => {
+                panic!("Error loading config: {}", err);
+            }
+        }
     }
-    
+
     pub fn get_run_migrations(&self) -> bool {
         self.run_migrations
     }
-    pub fn get_database_url(&self) -> String {
-        self.database_url.clone()
+    pub fn get_database_url(&self) -> &str {
+        self.database_url.as_str()
     }
     pub fn get_port(&self) -> u16 {
         self.port
     }
-    pub fn get_host(&self) -> String {
-        self.host.clone()
+    pub fn get_host(&self) -> &str {
+        self.host.as_str()
     }
 
     pub fn get_listener_addr(&self) -> String {
         format!("{}:{}", self.host, self.port)
     }
-    pub fn get_secret(&self) -> String {
-        self.secret.clone()
+    pub fn get_secret(&self) -> &str {
+        self.secret.as_str()
     }
     pub fn get_jwt_expiration(&self) -> i64 {
         self.jwt_expiration_min
     }
-    pub fn get_log_level(&self) -> String {
-        self.log_level.clone()
+    pub fn get_log_level(&self) -> &str {
+        self.rust_log.as_str()
+    }
+    pub fn get_save_dir(&self) -> &str {
+        &self.save_dir
     }
 }
 
