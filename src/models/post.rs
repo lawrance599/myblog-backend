@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::repositories::post::Post;
+use crate::repositories::post::PostMeta;
 #[derive(Default)]
 pub struct PostCreate {
     pub title: String,
@@ -32,14 +32,14 @@ impl TryFrom<RowTags> for Tags {
     }
 }
 #[derive(Serialize)]
-pub struct PostMeta {
+pub struct PostMetaRead {
     id: i32,
     title: String,
     tags: Vec<String>,
     count: i32,
 }
-impl From<Post> for PostMeta {
-    fn from(value: Post) -> Self {
+impl From<PostMeta> for PostMetaRead {
+    fn from(value: PostMeta) -> Self {
         return Self {
             id: value.id,
             title: value.title,
@@ -57,7 +57,7 @@ pub struct PostFull {
     count: i32,
 }
 impl PostFull {
-    pub fn with_content(meta: Post, content: String) -> Self {
+    pub fn with_content(meta: PostMeta, content: String) -> Self {
         return Self {
             id: meta.id,
             title: meta.title,
