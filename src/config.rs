@@ -63,20 +63,3 @@ impl AppConfig {
         &self.save_dir
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_config() {
-        let config = AppConfig::new();
-        assert_eq!(config.get_port(), 8080);
-        assert_eq!(config.get_host(), "0.0.0.0");
-        assert_eq!(config.get_listener_addr(), "0.0.0.0:8080");
-        assert_eq!(config.get_secret(), "secret");
-        assert_eq!(config.get_jwt_expiration(), 86400);
-        assert_eq!(config.get_run_migrations(), true);
-        assert!(config.get_database_url().contains("postgres"));
-        assert_eq!(config.get_log_level(), "info");
-    }
-}

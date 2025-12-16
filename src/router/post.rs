@@ -1,11 +1,11 @@
+use crate::models::SuccessResponse;
 use crate::models::post::*;
-use crate::models::{ErrorResponse, SuccessResponse};
+use crate::service::ServiceError;
 use crate::state::AppState;
 use axum::extract::{Path, State};
 use axum::{
     Router,
     extract::Multipart,
-    http::StatusCode,
     routing::{get, post},
 };
 
@@ -18,58 +18,43 @@ pub async fn new() -> Router<AppState> {
 }
 pub async fn list_posts(
     State(state): State<AppState>,
-) -> Result<SuccessResponse<Vec<PostMetaRead>>, ErrorResponse> {
-    let posts = state.post_service.list_all().await;
-    return match posts {
-        Ok(posts) => Ok(SuccessResponse::new(
-            posts.into_iter().map(|i| i.into()).collect(),
-        )),
-        Err(err) => Err(ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, err)),
-    };
+) -> Result<SuccessResponse<Vec<PostMetaRead>>, ServiceError> {
+    let posts = state.post_service.list_all().await?;
+    Ok(SuccessResponse::new(
+        posts.into_iter().map(|p| p.into()).collect(),
+    ))
 }
 pub async fn read_post_content(
     State(state): State<AppState>,
     Path(id): Path<i32>,
-) -> Result<SuccessResponse<PostFull>, ErrorResponse> {
-    let post = state
-        .post_service
-        .read_one(id)
-        .await
-        .map_err(|e| ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+) -> Result<SuccessResponse<Post>, ServiceError> {
+    let post = state.post_service.read_one(id).await?;
     let path = state.post_service.build_file_path(&post.title).await;
-    let content = tokio::fs::read_to_string(path)
-        .await
-        .map_err(|e| ErrorResponse::new(StatusCode::NOT_FOUND, e.to_string()))?;
-    Ok(SuccessResponse::new(PostFull::with_content(post, content)))
+    let content = tokio::fs::read_to_string(path).await?;
+    Ok(SuccessResponse::new(Post::with_content(post, content)))
 }
 
 pub async fn read_post_meta(
     State(state): State<AppState>,
     Path(id): Path<i32>,
-) -> Result<SuccessResponse<PostMetaRead>, ErrorResponse> {
-    let post = state
-        .post_service
-        .read_one(id)
-        .await
-        .map_err(|e| ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+) -> Result<SuccessResponse<PostMetaRead>, ServiceError> {
+    let post = state.post_service.read_one(id).await?;
     Ok(SuccessResponse::new(post.into()))
 }
 
 pub async fn add_post(
     State(state): State<AppState>,
     multipart: Multipart,
-) -> Result<SuccessResponse<PostId>, ErrorResponse> {
-    let new = process_multipart(multipart)
-        .await
-        .map_err(|e| ErrorResponse::new(StatusCode::BAD_REQUEST, e))?;
-    tracing::Span::current().record("title", &new.title);
-    let post = state
-        .post_service
-        .add_one(new)
-        .await
-        .map_err(|e| ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+) -> Result<SuccessResponse<PostMetaRead>, ServiceError> {
+    let new = match process_multipart(multipart).await {
+        Ok(new) => Ok(new),
+        Err(e) => Err(ServiceError::BadArugment(e)),
+    }?;
 
-    Ok(SuccessResponse::new(PostId::new(post.id)))
+    tracing::Span::current().record("title", &new.title);
+    let post = state.post_service.add_one(new).await?;
+
+    Ok(SuccessResponse::new(post.into()))
 }
 #[inline]
 async fn process_multipart(mut multipart: Multipart) -> Result<PostCreate, String> {

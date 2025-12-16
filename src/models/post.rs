@@ -49,14 +49,14 @@ impl From<PostMeta> for PostMetaRead {
     }
 }
 #[derive(Serialize)]
-pub struct PostFull {
+pub struct Post {
     id: i32,
     title: String,
     tags: Vec<String>,
     content: String,
     count: i32,
 }
-impl PostFull {
+impl Post {
     pub fn with_content(meta: PostMeta, content: String) -> Self {
         return Self {
             id: meta.id,

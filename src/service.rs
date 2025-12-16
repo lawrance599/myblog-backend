@@ -1,5 +1,5 @@
 mod post;
-use crate::models::{ErrorResponse, SuccessResponse};
+use crate::models::ErrorResponse;
 use crate::repositories::ReponsitoryError;
 use axum::Json;
 use axum::http::StatusCode;

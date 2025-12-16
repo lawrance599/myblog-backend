@@ -1,6 +1,7 @@
 use crate::repositories::ReponsitoryError;
 use crate::repositories::post::{PostMeta, PostMetaCreate, PostMetaReponsitory, PostMetaUpdate};
 use async_trait::async_trait;
+use serde_json;
 use sqlx::Pool;
 use sqlx::types::Json;
 use tracing::instrument;
@@ -59,10 +60,21 @@ impl PostMetaReponsitory for SqlxReponsitory {
         &self,
         keywords: &[String],
     ) -> Result<Vec<PostMeta>, ReponsitoryError> {
+        if keywords.is_empty() {
+            return Ok(vec![]);
+        }
+
+        // 构建正确的tsquery格式，每个关键词用 & 连接
+        let query_string = keywords
+            .iter()
+            .map(|keyword| format!("'{}'", keyword.replace("'", "''")))
+            .collect::<Vec<_>>()
+            .join(" & ");
+
         let posts = sqlx::query_as::<_, PostMeta>(
             "SELECT * FROM post WHERE kw @@ to_tsquery('simple', $1)",
         )
-        .bind(keywords.join(" & "))
+        .bind(query_string)
         .fetch_all(&self.0)
         .await?;
         Ok(posts)
@@ -70,8 +82,12 @@ impl PostMetaReponsitory for SqlxReponsitory {
 
     #[instrument(name = "PostMetaReponsitory::find_by_tags", level = "debug", skip_all)]
     async fn find_by_tags(&self, tags: &[String]) -> Result<Vec<PostMeta>, ReponsitoryError> {
-        let posts = sqlx::query_as::<_, PostMeta>("SELECT * FROM post WHERE tags @> $1")
-            .bind(Json(tags.to_vec()))
+        if tags.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let posts = sqlx::query_as::<_, PostMeta>("SELECT * FROM post WHERE tags @> $1::jsonb")
+            .bind(serde_json::to_value(tags).unwrap())
             .fetch_all(&self.0)
             .await?;
         Ok(posts)
@@ -84,7 +100,7 @@ impl PostMetaReponsitory for SqlxReponsitory {
         let new_post = sqlx::query_as::<_, PostMeta>(
             r#"INSERT INTO
             post (title, tags, kw)
-            VALUES ($1, $2, to_tsvector("simple", $3)
+            VALUES ($1, $2, to_tsvector('simple', $3))
             RETURNING *"#,
         )
         .bind(title)
@@ -107,8 +123,8 @@ impl PostMetaReponsitory for SqlxReponsitory {
 
         let updated_post = sqlx::query_as::<_, PostMeta>(
             r#"UPDATE
-        post SET title = $1, tags = $2,kw = to_tsvector("simple", $3),
-        last_modify = CURRENT_TIMESTAMP, count = count+1 
+        post SET title = $1, tags = $2,kw = to_tsvector('simple', $3),
+        last_modify = CURRENT_TIMESTAMP, count = count+1
         WHERE id = $4 RETURNING *"#,
         )
         .bind(title)
