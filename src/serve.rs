@@ -39,6 +39,7 @@ pub async fn serve() {
     let router = Router::new()
         .merge(router::new().await)
         .layer(cors)
+        .layer(tower_http::trace::TraceLayer::new_for_http())
         .with_state(state);
 
     axum::serve(listener, router).await.unwrap();

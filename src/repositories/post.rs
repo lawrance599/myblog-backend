@@ -29,7 +29,11 @@ pub struct PostMetaUpdate {
 }
 #[async_trait]
 pub trait PostMetaReponsitory: Send + Sync {
-    async fn list_all(&self) -> Result<Vec<PostMeta>, ReponsitoryError>;
+    async fn list_pagenigation(
+        &self,
+        start_id: i32,
+        page_size: i32,
+    ) -> Result<Vec<PostMeta>, ReponsitoryError>;
     async fn find_by_id(&self, id: i32) -> Result<PostMeta, ReponsitoryError>;
     async fn find_by_keywords(
         &self,

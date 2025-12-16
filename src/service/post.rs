@@ -1,7 +1,7 @@
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 
-use crate::models::post::*;
+use crate::models::{Pagenigation, post::*};
 use crate::repositories::post::{PostMeta, PostMetaCreate, PostMetaReponsitory, SqlxReponsitory};
 use crate::service::ServiceError;
 use jieba_rs::Jieba;
@@ -41,7 +41,7 @@ impl PostService {
         }
     }
 
-    #[instrument(name = "添加博文", level = "info", skip_all, fields(id))]
+    #[instrument(name = "PostService::add_one", level = "info", skip_all, fields(id))]
     pub async fn add_one(&self, post: PostCreate) -> Result<PostMeta, ServiceError> {
         let PostCreate {
             title,
@@ -62,11 +62,11 @@ impl PostService {
 
         Ok(new)
     }
-    #[instrument(name = "读取博文元数据", level = "info", skip(self))]
+    #[instrument(name = "PostService::read_one", level = "info", skip(self))]
     pub async fn read_one(&self, id: i32) -> Result<PostMeta, ServiceError> {
         Ok(self.repository.find_by_id(id).await?)
     }
-    #[instrument(name = "删除博文", level = "info", skip(self))]
+    #[instrument(name = "PostService::delete_one", level = "info", skip(self))]
     pub async fn delete_one(&self, id: i32) -> Result<PostMeta, ServiceError> {
         // 首先获取要删除的 post
         let post = self.repository.find_by_id(id).await?;
@@ -76,8 +76,16 @@ impl PostService {
 
         Ok(post)
     }
-    pub async fn list_all(&self) -> Result<Vec<PostMeta>, ServiceError> {
-        Ok(self.repository.list_all().await?)
+    #[instrument(name = "PostService::list", level = "info", skip_all, fields(cursor = %page.cursor.unwrap_or_default(), page_size = %page.page_size))]
+    pub async fn list(&self, page: Pagenigation) -> Result<Vec<PostMeta>, ServiceError> {
+        // TODO: 目前的分页是简单的使用上一次查询的结果的最后一个id作为下一次查询的游标
+        // 但是之后考虑将排序方法, 结果id, 用户信息等内容放入cursor后进行加密作为验证手段
+        let Pagenigation { cursor, page_size } = page;
+
+        Ok(self
+            .repository
+            .list_pagenigation(cursor.unwrap_or(0), page_size)
+            .await?)
     }
 
     async fn cut(&self, text: &str) -> Vec<String> {

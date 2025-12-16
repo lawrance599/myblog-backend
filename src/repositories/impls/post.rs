@@ -26,10 +26,16 @@ impl SqlxReponsitory {
 #[async_trait]
 impl PostMetaReponsitory for SqlxReponsitory {
     #[instrument(name = "PostMetaReponsitory::list_all", level = "debug", skip(self))]
-    async fn list_all(&self) -> Result<Vec<PostMeta>, ReponsitoryError> {
+    async fn list_pagenigation(
+        &self,
+        start_id: i32,
+        page_size: i32,
+    ) -> Result<Vec<PostMeta>, ReponsitoryError> {
         let posts = sqlx::query_as::<_, PostMeta>(
-            "SELECT id, title, tags, first_publish, last_modify, count FROM post LIMIT 8",
+            "SELECT id, title, tags, first_publish, last_modify, count FROM post LIMIT id > $1 limit $2",
         )
+        .bind(start_id)
+        .bind(page_size)
         .fetch_all(&self.0)
         .await?;
 

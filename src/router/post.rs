@@ -1,7 +1,9 @@
+use crate::models::Pagenigation;
 use crate::models::SuccessResponse;
 use crate::models::post::*;
 use crate::service::ServiceError;
 use crate::state::AppState;
+use axum::extract::Query;
 use axum::extract::{Path, State};
 use axum::{
     Router,
@@ -16,10 +18,18 @@ pub async fn new() -> Router<AppState> {
         .route("/{id}", get(read_post_content))
         .route("/list", get(list_posts))
 }
+
+/// 分页访问报告的元数据
+///
+/// # Arguments
+///
+/// - `Query(pagenigation` (`undefined`) - 分页参数.
+///
 pub async fn list_posts(
+    Query(pagenigation): Query<Pagenigation>,
     State(state): State<AppState>,
 ) -> Result<SuccessResponse<Vec<PostMetaRead>>, ServiceError> {
-    let posts = state.post_service.list_all().await?;
+    let posts = state.post_service.list(pagenigation).await?;
     Ok(SuccessResponse::new(
         posts.into_iter().map(|p| p.into()).collect(),
     ))
@@ -50,6 +60,18 @@ pub async fn add_post(
         Ok(new) => Ok(new),
         Err(e) => Err(ServiceError::BadArugment(e)),
     }?;
+
+    if new.title.len() > 255 || new.title.is_empty() {
+        return Err(ServiceError::BadArugment(
+            "标题长度不能超过255或为空".to_string(),
+        ));
+    }
+    if new.tags.len() > 10 {
+        return Err(ServiceError::BadArugment("标签长度不能超过10".to_string()));
+    }
+    if new.content.len() > 1024 * 1024 * 10 {
+        return Err(ServiceError::BadArugment("内容长度不能超过10M".to_string()));
+    }
 
     tracing::Span::current().record("title", &new.title);
     let post = state.post_service.add_one(new).await?;
