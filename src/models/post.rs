@@ -3,7 +3,6 @@ use serde;
 use serde::{Deserialize, Serialize};
 #[derive(Default)]
 pub struct PostCreate {
-    #[serde(max_length = 255)]
     pub title: String,
     pub tags: Vec<String>,
     pub content: Vec<u8>,

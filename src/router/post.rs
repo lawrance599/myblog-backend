@@ -38,6 +38,9 @@ pub async fn read_post_content(
     State(state): State<AppState>,
     Path(id): Path<i32>,
 ) -> Result<SuccessResponse<Post>, ServiceError> {
+    if id <= 0 {
+        return Err(ServiceError::BadArugment("无效的id".to_string()));
+    }
     let post = state.post_service.read_one(id).await?;
     let path = state.post_service.build_file_path(&post.title).await;
     let content = tokio::fs::read_to_string(path).await?;
@@ -48,6 +51,9 @@ pub async fn read_post_meta(
     State(state): State<AppState>,
     Path(id): Path<i32>,
 ) -> Result<SuccessResponse<PostMetaRead>, ServiceError> {
+    if id <= 0 {
+        return Err(ServiceError::BadArugment("无效的id".to_string()));
+    }
     let post = state.post_service.read_one(id).await?;
     Ok(SuccessResponse::new(post.into()))
 }

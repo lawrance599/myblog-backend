@@ -8,7 +8,6 @@ pub struct Pagenigation {
     #[serde(default = "default_page_size")]
     pub page_size: i32,
 }
-
 fn default_page_size() -> i32 {
     8
 }
