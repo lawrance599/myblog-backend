@@ -3,6 +3,7 @@ use crate::repositories::post::{PostMeta, PostMetaCreate, PostMetaReponsitory, P
 use async_trait::async_trait;
 use serde_json;
 use sqlx::Pool;
+use sqlx::Row;
 use sqlx::types::Json;
 use tracing::instrument;
 
@@ -149,5 +150,21 @@ impl PostMetaReponsitory for SqlxReponsitory {
             .fetch_one(&self.0)
             .await?;
         Ok(())
+    }
+    #[instrument(
+        name = "PostMetaReponsitory::list_all_tags",
+        level = "debug",
+        skip(self)
+    )]
+    async fn list_all_tags(&self) -> Result<Vec<String>, ReponsitoryError> {
+        let tags = sqlx::query(
+            "SELECT DISTINCT jsonb_array_elements_text(tags) as tag FROM post ORDER BY tag",
+        )
+        .fetch_all(&self.0)
+        .await?
+        .into_iter()
+        .map(|row| row.get::<String, _>("tag"))
+        .collect();
+        Ok(tags)
     }
 }

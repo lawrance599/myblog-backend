@@ -43,5 +43,6 @@ pub trait PostMetaReponsitory: Send + Sync {
     async fn add(&self, post: PostMetaCreate) -> Result<PostMeta, ReponsitoryError>;
     async fn update(&self, post: PostMetaUpdate) -> Result<PostMeta, ReponsitoryError>;
     async fn delete(&self, id: i32) -> Result<(), ReponsitoryError>;
+    async fn list_all_tags(&self) -> Result<Vec<String>, ReponsitoryError>;
 }
 pub use super::impls::post::SqlxReponsitory;
