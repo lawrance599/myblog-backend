@@ -1,5 +1,6 @@
 mod response;
 pub use response::*;
+pub mod comment;
 pub mod post;
 
 #[derive(serde::Deserialize)]

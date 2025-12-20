@@ -1,3 +1,4 @@
+pub mod comment;
 mod impls;
 pub mod post;
 #[derive(Debug, thiserror::Error)]

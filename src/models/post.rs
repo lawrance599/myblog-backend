@@ -37,6 +37,8 @@ pub struct PostMetaRead {
     title: String,
     tags: Vec<String>,
     count: i32,
+    first_publish: String,
+    last_modify: String,
 }
 impl From<PostMeta> for PostMetaRead {
     fn from(value: PostMeta) -> Self {
@@ -45,6 +47,8 @@ impl From<PostMeta> for PostMetaRead {
             title: value.title,
             tags: value.tags.0,
             count: value.count,
+            first_publish: value.first_publish.to_string(),
+            last_modify: value.last_modify.to_string(),
         };
     }
 }
@@ -55,6 +59,8 @@ pub struct Post {
     tags: Vec<String>,
     content: String,
     count: i32,
+    first_publish: String,
+    last_modify: String,
 }
 impl Post {
     pub fn with_content(meta: PostMeta, content: String) -> Self {
@@ -64,6 +70,8 @@ impl Post {
             tags: meta.tags.0,
             content,
             count: meta.count,
+            first_publish: meta.first_publish.to_string(),
+            last_modify: meta.last_modify.to_string(),
         };
     }
 }
